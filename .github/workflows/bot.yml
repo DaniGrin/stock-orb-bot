@@ -1,0 +1,39 @@
+name: stock-orb-bot
+
+on:
+  schedule:
+    - cron: "*/15 13-21 * * 1-5"   # every 15m, 13:00-21:59 UTC, Mon-Fri (covers US session in EST & EDT)
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: stock-orb-bot
+  cancel-in-progress: false
+
+jobs:
+  tick:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: pip install yfinance pandas numpy
+      - name: Run ORB ticks (validated 1h + experimental 15m)
+        run: |
+          python stock_paper.py --ticker SPY --interval 1h  --once
+          python stock_paper.py --ticker QQQ --interval 1h  --once
+          python stock_paper.py --ticker DIA --interval 1h  --once
+          python stock_paper.py --ticker SPY --interval 15m --once
+          python stock_paper.py --ticker QQQ --interval 15m --once
+          python stock_paper.py --ticker DIA --interval 15m --once
+      - name: Save state back to the repo
+        run: |
+          git config user.name  "stock-orb-bot"
+          git config user.email "stock-orb-bot@users.noreply.github.com"
+          git add -A
+          git diff --staged --quiet || git commit -m "state: $(date -u +%FT%TZ)"
+          git push
