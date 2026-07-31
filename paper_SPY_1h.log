@@ -32,3 +32,5 @@
 [2026-07-31 14:12:42]   ENTER SHORT @ 734.63  qty 20.4  stop 739.30
 [2026-07-31 14:12:42]   EXIT stop @ 739.30  PnL -101.12  equity 9411.80  (WR 6/16)
 [2026-07-31 16:13:02] === SPY 1h ORB paper | equity $9,411.80 | activate 2.0R risk 1% ===
+[2026-07-31 17:53:58] === SPY 1h ORB paper | equity $9,411.80 | activate 2.0R risk 1% ===
+[2026-07-31 17:53:58]   ENTER LONG @ 746.30  qty 11.7  stop 738.28
