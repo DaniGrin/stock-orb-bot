@@ -125,6 +125,12 @@ if __name__ == "__main__":
     log(tag, f"=== {tkr} {a.interval} ORB paper | equity ${s['equity']:,.2f} | activate {a.activate}R risk {a.risk:.0%} ===")
     try:
         d = fetch(tkr, "20d" if a.interval == "1h" else "10d", a.interval)
-        if process(d, s, a, tkr=tag): save_state(tag, s)
+        if s["last_bar_ts"] == 0 and len(d):
+            # FRESH START: don't backtest history — just mark it seen, trade only NEW bars from now
+            s["last_bar_ts"] = int(d.index[-1].value // 10**6)
+            log(tag, f"  initialized fresh at ${s['equity']:,.0f} — trading only NEW bars from now (history skipped for EMA only)")
+            save_state(tag, s)
+        elif process(d, s, a, tkr=tag):
+            save_state(tag, s)
     except Exception:
         log(tag, "ERROR:\n" + traceback.format_exc())
