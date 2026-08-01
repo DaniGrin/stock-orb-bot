@@ -38,18 +38,18 @@ def fetch(ticker, period, interval):
     d["ema"] = d.close.ewm(span=50, adjust=False).mean()
     return d
 
-def _open(s, side, entry, R, risk, tkr):
+def _open(s, side, entry, R, risk, tkr, ts):
     qty = (s["equity"] * risk) / R
     s.update({"side": side, "entry": entry, "R": R, "peak": 0.0, "qty": qty,
               "stop": entry - R if side == 1 else entry + R, "traded": True})
-    log(tkr, f"  ENTER {'LONG' if side==1 else 'SHORT'} @ {entry:.2f}  qty {qty:.1f}  stop {s['stop']:.2f}")
+    log(tkr, f"  {ts:%Y-%m-%d %H:%M} ET  ENTER {'LONG' if side==1 else 'SHORT'} @ {entry:.2f}  qty {qty:.1f}  stop {s['stop']:.2f}")
 
-def _close(s, px, reason, tkr):
+def _close(s, px, reason, tkr, ts):
     side, entry, qty = s["side"], s["entry"], s["qty"]
     pnl = side*(px-entry)*qty - 2*COST*entry*qty
     s["equity"] += pnl; s["trades"] += 1
     if pnl > 0: s["wins"] += 1
-    log(tkr, f"  EXIT {reason} @ {px:.2f}  PnL {pnl:+.2f}  equity {s['equity']:.2f}  (WR {s['wins']}/{s['trades']})")
+    log(tkr, f"  {ts:%Y-%m-%d %H:%M} ET  EXIT {reason} @ {px:.2f}  PnL {pnl:+.2f}  equity {s['equity']:.2f}  (WR {s['wins']}/{s['trades']})")
     s.update({"side": 0, "entry": 0.0, "R": 0.0, "peak": 0.0, "qty": 0.0, "stop": 0.0})
 
 def handle_bar(ts, o, h, l, c, ema, s, args, tkr):
@@ -57,7 +57,7 @@ def handle_bar(ts, o, h, l, c, ema, s, args, tkr):
     if etmin < OPEN_M or etmin >= CLOSE_M: return
     d = str(ts.date())
     if s["session_date"] != d:
-        if s["side"] != 0: _close(s, o, "newday", tkr)
+        if s["side"] != 0: _close(s, o, "newday", tkr, ts)
         s.update({"session_date": d, "orH": None, "orL": None, "traded": False})
     if etmin < OPEN_M + args.or_min:
         s["orH"] = h if s["orH"] is None else max(s["orH"], h)
@@ -66,13 +66,13 @@ def handle_bar(ts, o, h, l, c, ema, s, args, tkr):
     isEOD = etmin + args.tf_min >= CLOSE_M
     # manage open position
     if s["side"] == 1:
-        if l <= s["stop"]: _close(s, s["stop"], "stop", tkr)
+        if l <= s["stop"]: _close(s, s["stop"], "stop", tkr, ts)
         else:
             s["peak"] = max(s["peak"], (h - s["entry"]) / s["R"])
             lvl = math.floor(s["peak"] - args.activate) if s["peak"] >= args.activate else -1.0
             s["stop"] = s["entry"] + lvl * s["R"]
     elif s["side"] == -1:
-        if h >= s["stop"]: _close(s, s["stop"], "stop", tkr)
+        if h >= s["stop"]: _close(s, s["stop"], "stop", tkr, ts)
         else:
             s["peak"] = max(s["peak"], (s["entry"] - l) / s["R"])
             lvl = math.floor(s["peak"] - args.activate) if s["peak"] >= args.activate else -1.0
@@ -80,10 +80,10 @@ def handle_bar(ts, o, h, l, c, ema, s, args, tkr):
     # entry (trend-aligned breakout, one per day)
     orR = (s["orH"]-s["orL"]) if s["orH"] is not None else None
     if s["side"] == 0 and orR and orR > 0 and not s["traded"] and not isEOD:
-        if c > ema and h >= s["orH"]:   _open(s, 1, s["orH"], orR, args.risk, tkr)
-        elif c < ema and l <= s["orL"]: _open(s, -1, s["orL"], orR, args.risk, tkr)
+        if c > ema and h >= s["orH"]:   _open(s, 1, s["orH"], orR, args.risk, tkr, ts)
+        elif c < ema and l <= s["orL"]: _open(s, -1, s["orL"], orR, args.risk, tkr, ts)
     if isEOD and s["side"] != 0:
-        _close(s, c, "EOD", tkr)
+        _close(s, c, "EOD", tkr, ts)
 
 def process(d, s, args, tkr):
     changed = False
