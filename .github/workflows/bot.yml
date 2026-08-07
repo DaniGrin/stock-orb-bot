@@ -15,6 +15,7 @@ concurrency:
 jobs:
   tick:
     runs-on: ubuntu-latest
+    timeout-minutes: 6          # if yfinance/Yahoo hangs, fail fast instead of stalling 15 min
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
