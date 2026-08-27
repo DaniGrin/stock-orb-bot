@@ -220,3 +220,6 @@
 [2026-08-26 19:04:51] === DIA 15m ORB paper | equity $9,874.11 | activate 2.0R risk 1% ===
 [2026-08-26 21:49:46] === DIA 15m ORB paper | equity $9,874.11 | activate 2.0R risk 1% ===
 [2026-08-26 21:49:47]   2026-08-26 15:45 ET  EXIT EOD @ 534.23  PnL +1.08  equity 9875.18  (WR 8/16)
+[2026-08-27 22:44:07] === DIA 15m ORB paper | equity $9,875.18 | activate 2.0R risk 1% ===
+[2026-08-27 22:44:07]   2026-08-27 10:30 ET  ENTER LONG @ 535.01  qty 47.2  stop 532.92
+[2026-08-27 22:44:07]   2026-08-27 15:45 ET  EXIT EOD @ 535.17  PnL -2.71  equity 9872.47  (WR 8/17)
