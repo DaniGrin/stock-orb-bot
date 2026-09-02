@@ -1,16 +1,16 @@
 {
   "equity": 9661.711195915723,
-  "session_date": "2026-09-01",
-  "orH": 764.0,
-  "orL": 761.1799926757812,
-  "traded": true,
+  "session_date": "2026-09-02",
+  "orH": 765.5850219726562,
+  "orL": 761.72998046875,
+  "traded": false,
   "side": 0,
   "entry": 0.0,
   "R": 0.0,
   "peak": 0.0,
   "stop": 0.0,
   "qty": 0.0,
-  "last_bar_ts": 1788291000000,
+  "last_bar_ts": 1788366600000,
   "trades": 14,
   "wins": 6
 }
