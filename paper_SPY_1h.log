@@ -255,3 +255,6 @@
 [2026-09-11 16:51:00] === SPY 1h ORB paper | equity $9,738.08 | activate 2.0R risk 1% ===
 [2026-09-11 19:23:58] === SPY 1h ORB paper | equity $9,738.08 | activate 2.0R risk 1% ===
 [2026-09-11 21:49:23] === SPY 1h ORB paper | equity $9,738.08 | activate 2.0R risk 1% ===
+[2026-09-14 18:18:42] === SPY 1h ORB paper | equity $9,738.08 | activate 2.0R risk 1% ===
+[2026-09-14 18:18:43]   2026-09-14 10:30 ET  ENTER SHORT @ 758.23  qty 33.8  stop 761.11
+[2026-09-14 18:18:43]   2026-09-14 11:30 ET  EXIT stop @ 761.11  PnL -107.62  equity 9630.46  (WR 8/18)
