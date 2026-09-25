@@ -317,3 +317,6 @@
 [2026-09-24 20:47:25] === QQQ 15m ORB paper | equity $10,055.35 | activate 2.0R risk 1% ===
 [2026-09-24 20:47:25]   2026-09-24 15:45 ET  EXIT EOD @ 741.06  PnL +123.78  equity 10179.13  (WR 18/36)
 [2026-09-24 23:43:26] === QQQ 15m ORB paper | equity $10,179.13 | activate 2.0R risk 1% ===
+[2026-09-25 17:44:01] === QQQ 15m ORB paper | equity $10,179.13 | activate 2.0R risk 1% ===
+[2026-09-25 17:44:01]   2026-09-25 09:45 ET  ENTER LONG @ 744.58  qty 34.9  stop 741.66
+[2026-09-25 17:44:01]   2026-09-25 10:00 ET  EXIT stop @ 741.66  PnL -112.19  equity 10066.93  (WR 18/37)
