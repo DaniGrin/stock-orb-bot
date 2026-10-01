@@ -332,3 +332,5 @@
 [2026-09-30 18:14:38]   2026-09-30 10:15 ET  ENTER SHORT @ 512.54  qty 56.9  stop 514.16
 [2026-09-30 22:18:53] === DIA 15m ORB paper | equity $9,217.68 | activate 2.0R risk 1% ===
 [2026-09-30 22:18:53]   2026-09-30 15:45 ET  EXIT EOD @ 508.49  PnL +218.78  equity 9436.46  (WR 14/39)
+[2026-10-01 18:40:00] === DIA 15m ORB paper | equity $9,436.46 | activate 2.0R risk 1% ===
+[2026-10-01 18:40:01]   2026-10-01 09:45 ET  ENTER SHORT @ 508.04  qty 32.4  stop 510.95
