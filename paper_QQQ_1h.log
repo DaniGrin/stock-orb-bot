@@ -334,3 +334,6 @@
 [2026-10-08 23:45:35]   2026-10-08 15:30 ET  EXIT EOD @ 747.57  PnL +82.83  equity 9987.95  (WR 17/33)
 [2026-10-09 18:37:20] === QQQ 1h ORB paper | equity $9,987.95 | activate 2.0R risk 1% ===
 [2026-10-09 22:54:00] === QQQ 1h ORB paper | equity $9,987.95 | activate 2.0R risk 1% ===
+[2026-10-12 21:30:59] === QQQ 1h ORB paper | equity $9,987.95 | activate 2.0R risk 1% ===
+[2026-10-12 21:31:00]   2026-10-12 14:30 ET  ENTER SHORT @ 745.19  qty 21.7  stop 749.79
+[2026-10-12 21:31:00]   2026-10-12 15:30 ET  EXIT EOD @ 746.02  PnL -24.56  equity 9963.39  (WR 17/34)
