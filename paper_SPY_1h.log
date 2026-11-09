@@ -402,3 +402,6 @@
 [2026-11-06 01:02:04]   2026-11-05 15:30 ET  EXIT EOD @ 733.13  PnL +51.79  equity 9785.45  (WR 23/44)
 [2026-11-06 19:48:48] === SPY 1h ORB paper | equity $9,785.45 | activate 2.0R risk 1% ===
 [2026-11-06 23:55:00] === SPY 1h ORB paper | equity $9,785.45 | activate 2.0R risk 1% ===
+[2026-11-09 22:50:08] === SPY 1h ORB paper | equity $9,785.45 | activate 2.0R risk 1% ===
+[2026-11-09 22:50:09]   2026-11-09 11:30 ET  ENTER LONG @ 749.47  qty 11.6  stop 741.03
+[2026-11-09 22:50:09]   2026-11-09 15:30 ET  EXIT EOD @ 752.61  PnL +32.91  equity 9818.37  (WR 24/45)
