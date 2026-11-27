@@ -1,7 +1,8 @@
 """ORB stock paper bot — Opening Range Breakout + EMA50 trend filter + step-trail 2R, EOD exit.
 Live prices via yfinance (works on GitHub Actions). Virtual money, state persists to JSON.
 Session-aware: US regular hours 09:30-16:00 ET. One trade per day per ticker.
-Timeframe configurable: 1h (validated over 2y) or 15m (user's original idea, experimental).
+Timeframe configurable: 1h or 15m. NOTE: this strategy has NO demonstrated edge - the earlier positive
+backtest came from look-ahead and unachievable fills, fixed 2026-11-27 (see README).
 
   python stock_paper.py --ticker SPY --interval 1h --once
   python stock_paper.py --ticker SPY --interval 1h --replay 700
@@ -83,7 +84,7 @@ def _close(s, px, reason, tkr, ts):
     log(tkr, f"  {ts:%Y-%m-%d %H:%M} ET  EXIT {reason} @ {px:.2f}  PnL {pnl:+.2f}  equity {s['equity']:.2f}  (WR {s['wins']}/{s['trades']})")
     s.update({"side": 0, "entry": 0.0, "R": 0.0, "peak": 0.0, "qty": 0.0, "stop": 0.0})
 
-def handle_bar(ts, o, h, l, c, ema, s, args, tkr):
+def handle_bar(ts, o, h, l, c, prev_c, prev_ema, s, args, tkr):
     etmin = ts.hour*60 + ts.minute
     close_m = session_close(ts.date())
     if etmin < OPEN_M or etmin >= close_m: return
@@ -109,11 +110,20 @@ def handle_bar(ts, o, h, l, c, ema, s, args, tkr):
             s["peak"] = max(s["peak"], (s["entry"] - l) / s["R"])
             lvl = math.floor(s["peak"] - args.activate) if s["peak"] >= args.activate else -1.0
             s["stop"] = s["entry"] - lvl * s["R"]
-    # entry (trend-aligned breakout, one per day)
+    # entry (trend-aligned breakout, one per day): a stop order resting at the range edge.
+    # Everything here must be knowable at the moment of the fill:
+    #   - the trend filter reads the PREVIOUS bar (this bar's close is still in the future)
+    #   - if this bar opens beyond the edge, the order fills at the open, never at a better price
+    #   - the order of prices inside a bar is unknown: if it also reaches the stop, count it as stopped
     orR = (s["orH"]-s["orL"]) if s["orH"] is not None else None
     if s["side"] == 0 and orR and orR > 0 and not s["traded"] and not isEOD:
-        if c > ema and h >= s["orH"]:   _open(s, 1, s["orH"], orR, args.risk, tkr, ts)
-        elif c < ema and l <= s["orL"]: _open(s, -1, s["orL"], orR, args.risk, tkr, ts)
+        side, px = 0, 0.0
+        if prev_c > prev_ema and h >= s["orH"]:   side, px = 1, max(s["orH"], o)
+        elif prev_c < prev_ema and l <= s["orL"]: side, px = -1, min(s["orL"], o)
+        if side:
+            _open(s, side, px, orR, args.risk, tkr, ts)
+            if (side == 1 and l <= s["stop"]) or (side == -1 and h >= s["stop"]):
+                _close(s, s["stop"], "stop", tkr, ts)
     if isEOD and s["side"] != 0:
         _close(s, c, "EOD", tkr, ts)
 
@@ -133,13 +143,14 @@ def settle_early_close(s, args, tkr, now, price_of):
 
 def process(d, s, args, tkr, now=None, price_of=official_close):
     changed = False
+    d = d.assign(prev_close=d.close.shift(1), prev_ema=d.ema.shift(1))   # what was known when each bar opened
     for ts, row in d.iterrows():
         tms = int(ts.value // 10**6)
         if tms <= s["last_bar_ts"]: continue
         if str(ts.date()) != s["session_date"]:          # a new session starts: the old one is over
             settle_early_close(s, args, tkr, ts, price_of)
         handle_bar(ts, float(row.open), float(row.high), float(row.low), float(row.close),
-                   float(row.ema), s, args, tkr)
+                   float(row.prev_close), float(row.prev_ema), s, args, tkr)
         s["last_bar_ts"] = tms; changed = True
     now = pd.Timestamp.now(tz="America/New_York") if now is None else now
     return settle_early_close(s, args, tkr, now, price_of) or changed

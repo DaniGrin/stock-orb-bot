@@ -1,0 +1,35 @@
+{
+  "note": "Account values when the entry logic was fixed. Judge the strategy only on what happens after.",
+  "accounts": {
+    "DIA_15m": {
+      "equity": 9785.17,
+      "trades": 78,
+      "wins": 31
+    },
+    "DIA_1h": {
+      "equity": 9973.7,
+      "trades": 60,
+      "wins": 28
+    },
+    "QQQ_15m": {
+      "equity": 9741.16,
+      "trades": 76,
+      "wins": 33
+    },
+    "QQQ_1h": {
+      "equity": 10566.77,
+      "trades": 55,
+      "wins": 31
+    },
+    "SPY_15m": {
+      "equity": 11920.58,
+      "trades": 76,
+      "wins": 33
+    },
+    "SPY_1h": {
+      "equity": 10140.91,
+      "trades": 54,
+      "wins": 29
+    }
+  }
+}
