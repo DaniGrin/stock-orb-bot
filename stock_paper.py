@@ -7,13 +7,14 @@ Timeframe configurable: 1h (validated over 2y) or 15m (user's original idea, exp
   python stock_paper.py --ticker SPY --interval 1h --replay 700
   python stock_paper.py --ticker SPY --interval 15m --replay 55
 """
-import os, sys, time, json, math, argparse, traceback
+import os, sys, time, json, math, argparse, traceback, datetime
 import numpy as np, pandas as pd, yfinance as yf
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 COST = 0.0002
 OPEN_M, CLOSE_M = 9*60+30, 16*60
 GRACE_MIN = 2                      # let Yahoo finalise a bar before trusting it
+SETTLE_MIN = 15                    # wait this long after an early close before reading the closing price
 
 def log(tag, msg):
     line = f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] {msg}"
@@ -39,13 +40,32 @@ def fetch(ticker, period, interval):
     d["ema"] = d.close.ewm(span=50, adjust=False).mean()
     return closed_only(d, 15 if interval == "15m" else 60)
 
+def session_close(day):
+    """Minutes after midnight ET at which the US session ends. NYSE closes early, at 13:00, on the day after
+    Thanksgiving, and on 3 July and 24 December when they fall Monday-Thursday (a Friday there is a holiday)."""
+    nov1 = datetime.date(day.year, 11, 1)
+    thanksgiving = nov1 + datetime.timedelta(days=(3 - nov1.weekday()) % 7 + 21)      # 4th Thursday
+    early = (day == thanksgiving + datetime.timedelta(days=1)
+             or ((day.month, day.day) in ((7, 3), (12, 24)) and day.weekday() <= 3))
+    return 13*60 if early else CLOSE_M
+
+def official_close(ticker, day):
+    """The closing price of one session from the daily series, or None if it cannot be read yet."""
+    try:
+        d = yf.download(ticker, period="1mo", interval="1d", progress=False, auto_adjust=True)
+        if isinstance(d.columns, pd.MultiIndex): d.columns = d.columns.droplevel(1)
+        x = d["Close"][[t.date() == day for t in d.index]].dropna()
+        return float(x.iloc[-1]) if len(x) else None
+    except Exception:
+        return None
+
 def closed_only(d, tf_min, now=None):
-    """Drop the bar that is still forming. A bar ends tf_min after it starts, or at the 16:00 ET close.
+    """Drop the bar that is still forming. A bar ends tf_min after it starts, or at the session close.
     Without this a half-built bar was processed, marked as seen, and its final high/low never checked."""
     if d.index.tz is None: d.index = d.index.tz_localize("America/New_York")
     now = pd.Timestamp.now(tz="America/New_York") if now is None else now
     end = d.index + pd.Timedelta(minutes=tf_min)
-    close = d.index.normalize() + pd.Timedelta(minutes=CLOSE_M)
+    close = d.index.normalize() + pd.to_timedelta([session_close(t.date()) for t in d.index], unit="min")
     end = end.where(end < close, close)
     return d[(end + pd.Timedelta(minutes=GRACE_MIN)) <= now]
 
@@ -65,7 +85,8 @@ def _close(s, px, reason, tkr, ts):
 
 def handle_bar(ts, o, h, l, c, ema, s, args, tkr):
     etmin = ts.hour*60 + ts.minute
-    if etmin < OPEN_M or etmin >= CLOSE_M: return
+    close_m = session_close(ts.date())
+    if etmin < OPEN_M or etmin >= close_m: return
     d = str(ts.date())
     if s["session_date"] != d:
         if s["side"] != 0: _close(s, o, "newday", tkr, ts)
@@ -74,7 +95,7 @@ def handle_bar(ts, o, h, l, c, ema, s, args, tkr):
         s["orH"] = h if s["orH"] is None else max(s["orH"], h)
         s["orL"] = l if s["orL"] is None else min(s["orL"], l)
         return
-    isEOD = etmin + args.tf_min >= CLOSE_M
+    isEOD = etmin + args.tf_min >= close_m
     # manage open position
     if s["side"] == 1:
         if l <= s["stop"]: _close(s, s["stop"], "stop", tkr, ts)
@@ -96,15 +117,32 @@ def handle_bar(ts, o, h, l, c, ema, s, args, tkr):
     if isEOD and s["side"] != 0:
         _close(s, c, "EOD", tkr, ts)
 
-def process(d, s, args, tkr):
+def settle_early_close(s, args, tkr, now, price_of):
+    """End-of-day exit for early-close days. Their last half hour arrives empty from Yahoo, so no bar can
+    trigger the exit: once the session is over, close any open position at that day's official close."""
+    if s["side"] == 0 or not s["session_date"]: return False
+    day = datetime.date.fromisoformat(s["session_date"])
+    close_m = session_close(day)
+    if close_m == CLOSE_M: return False                  # normal day: the last bar of the session exits
+    end = pd.Timestamp(s["session_date"], tz="America/New_York") + pd.Timedelta(minutes=close_m)
+    if now < end + pd.Timedelta(minutes=SETTLE_MIN): return False
+    px = price_of(args.ticker.upper(), day)
+    if px is None: return False                          # try again on the next run
+    _close(s, px, "EOD", tkr, end)
+    return True
+
+def process(d, s, args, tkr, now=None, price_of=official_close):
     changed = False
     for ts, row in d.iterrows():
         tms = int(ts.value // 10**6)
         if tms <= s["last_bar_ts"]: continue
+        if str(ts.date()) != s["session_date"]:          # a new session starts: the old one is over
+            settle_early_close(s, args, tkr, ts, price_of)
         handle_bar(ts, float(row.open), float(row.high), float(row.low), float(row.close),
                    float(row.ema), s, args, tkr)
         s["last_bar_ts"] = tms; changed = True
-    return changed
+    now = pd.Timestamp.now(tz="America/New_York") if now is None else now
+    return settle_early_close(s, args, tkr, now, price_of) or changed
 
 if __name__ == "__main__":
     p = argparse.ArgumentParser()
