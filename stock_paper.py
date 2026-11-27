@@ -13,6 +13,7 @@ import numpy as np, pandas as pd, yfinance as yf
 HERE = os.path.dirname(os.path.abspath(__file__))
 COST = 0.0002
 OPEN_M, CLOSE_M = 9*60+30, 16*60
+GRACE_MIN = 2                      # let Yahoo finalise a bar before trusting it
 
 def log(tag, msg):
     line = f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] {msg}"
@@ -36,7 +37,17 @@ def fetch(ticker, period, interval):
     if isinstance(d.columns, pd.MultiIndex): d.columns = d.columns.droplevel(1)
     d = d.rename(columns=str.lower)[["open","high","low","close"]].dropna()
     d["ema"] = d.close.ewm(span=50, adjust=False).mean()
-    return d
+    return closed_only(d, 15 if interval == "15m" else 60)
+
+def closed_only(d, tf_min, now=None):
+    """Drop the bar that is still forming. A bar ends tf_min after it starts, or at the 16:00 ET close.
+    Without this a half-built bar was processed, marked as seen, and its final high/low never checked."""
+    if d.index.tz is None: d.index = d.index.tz_localize("America/New_York")
+    now = pd.Timestamp.now(tz="America/New_York") if now is None else now
+    end = d.index + pd.Timedelta(minutes=tf_min)
+    close = d.index.normalize() + pd.Timedelta(minutes=CLOSE_M)
+    end = end.where(end < close, close)
+    return d[(end + pd.Timedelta(minutes=GRACE_MIN)) <= now]
 
 def _open(s, side, entry, R, risk, tkr, ts):
     qty = (s["equity"] * risk) / R
